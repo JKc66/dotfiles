@@ -1,0 +1,80 @@
+#!/bin/bash
+# 95-last-login - Secure Style
+
+GRAY='\033[1;30m'
+CYAN='\033[1;36m'
+GREEN='\033[1;32m'
+MAGENTA='\033[1;35m'
+WHITE='\033[1;37m'
+YELLOW='\033[1;33m'
+ORANGE='\033[0;33m'
+NC='\033[0m'
+
+USER_LOGIN=$(logname 2>/dev/null)
+[ -z "$USER_LOGIN" ] && USER_LOGIN=$(who am i | awk '{print $1}')
+[ -z "$USER_LOGIN" ] && USER_LOGIN="$USER"
+
+CACHE_DIR="/tmp/.geo_cache"
+CACHE_TTL=86400
+
+PREV_LINE=$(last -iF "$USER_LOGIN" 2>/dev/null \
+    | grep -v 'still logged in' \
+    | grep -v '^$' \
+    | grep -Ev '^wtmp|^reboot' \
+    | head -1)
+
+[ -z "$PREV_LINE" ] && exit 0
+
+PREV_IP=$(echo "$PREV_LINE" | awk '{print $3}')
+# Format: "Feb 11 • 08:25"
+PREV_DATE=$(echo "$PREV_LINE" | awk '{printf "%s %s • %s", $5, $6, substr($7, 1, 5)}')
+
+if [ -z "$PREV_IP" ] || [ "$PREV_IP" = "0.0.0.0" ]; then
+    echo ""
+    echo -e "    🔐 ${GRAY}Last Login:${NC} ${WHITE}$PREV_DATE${NC}"
+    echo ""
+    exit 0
+fi
+
+# Geo Cache logic
+mkdir -p "$CACHE_DIR" 2>/dev/null
+CACHE_FILE="$CACHE_DIR/$PREV_IP"
+LOCATION=""
+
+if [ -f "$CACHE_FILE" ]; then
+    FILE_AGE=$(( $(date +%s) - $(stat -c %Y "$CACHE_FILE" 2>/dev/null || echo 0) ))
+    if [ "$FILE_AGE" -lt "$CACHE_TTL" ]; then
+        LOCATION=$(cat "$CACHE_FILE")
+    fi
+fi
+
+if [ -z "$LOCATION" ]; then
+    if command -v geoiplookup >/dev/null 2>&1; then
+        GEO_OUT=$(geoiplookup "$PREV_IP" 2>/dev/null | head -1)
+        if echo "$GEO_OUT" | grep -q "Country Edition"; then
+            part2=$(echo "$GEO_OUT" | awk -F': ' '{print $2}')
+            NAME=$(echo "$part2" | awk -F', ' '{print $2}')
+            [ -n "$NAME" ] && [ "$NAME" != "IP Address not found" ] && LOCATION="$NAME"
+        fi
+    fi
+    if [ -z "$LOCATION" ]; then
+        GEO=$(curl -sf --max-time 2 "http://ip-api.com/json/${PREV_IP}?fields=status,city,country" 2>/dev/null)
+        if echo "$GEO" | grep -q '"status":"success"'; then
+            CITY=$(echo "$GEO" | sed -n 's/.*"city":"\([^"]*\)".*/\1/p')
+            COUNTRY=$(echo "$GEO" | sed -n 's/.*"country":"\([^"]*\)".*/\1/p')
+            [ -n "$CITY" ] && [ -n "$COUNTRY" ] && LOCATION="$CITY, $COUNTRY"
+        fi
+    fi
+    [ -n "$LOCATION" ] && echo "$LOCATION" > "$CACHE_FILE"
+fi
+
+# AESTHETIC OUTPUT
+echo ""
+if [ -n "$LOCATION" ]; then
+    # Format: 🔐 Last Login: Feb 11 • 08:25 📍 Swat, Pakistan (160.191.158.154)
+    # Using more subtle/secure colors as implied by lock icon
+    echo -e "    🔐 ${GRAY}Last Login:${NC} ${WHITE}$PREV_DATE${NC} 📍 ${GREEN}$LOCATION${NC} ${GRAY}($PREV_IP)${NC}"
+else
+    echo -e "    🔐 ${GRAY}Last Login:${NC} ${WHITE}$PREV_DATE${NC} 📍 ${WHITE}$PREV_IP${NC}"
+fi
+echo ""

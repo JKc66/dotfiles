@@ -1,0 +1,112 @@
+{
+  "$schema": "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/schema.json",
+  "version": 2,
+  "console_title_template": "\u26cf {{ .Folder }}{{ if .Root }} \u26a1{{ end }}",
+  "secondary_prompt": {
+    "template": "<#7F7F7F>\u2570\u2500</> ",
+    "foreground": "#7F7F7F"
+  },
+  "transient_prompt": {
+    "template": "<#80FF20>\u276f</> ",
+    "foreground": "#80FF20"
+  },
+  "blocks": [
+    {
+      "type": "prompt",
+      "alignment": "left",
+      "newline": true,
+      "segments": [
+        {
+          "type": "os",
+          "style": "plain",
+          "template": "<#F25022,#00A4EF>\u2580</><#7FBA00,#FFB900>\u2580</> ",
+          "foreground": "#cdd6f4"
+        },
+        {
+          "type": "session",
+          "style": "plain",
+          "template": "{{ .UserName }} ",
+          "foreground": "#FCDB05"
+        },
+        {
+          "type": "path",
+          "style": "plain",
+          "template": "<#7F7F7F>•</> 📦 {{ .Path }} ",
+          "foreground": "#17DD62",
+          "options": {
+            "style": "agnoster_short",
+            "max_depth": 3
+          }
+        },
+        {
+          "type": "git",
+          "style": "plain",
+          "template": "<#7F7F7F>•</> {{ .HEAD }}{{ if .BranchStatus }} {{ .BranchStatus }}{{ end }}{{ if .Staging.Changed }} <#BE1414> {{ .Staging.String }}</>{{ end }}{{ if .Working.Changed }} <#FCDB05> {{ .Working.String }}</>{{ end }}{{ if gt .StashCount 0 }} <#8B32B8> {{ .StashCount }}</>{{ end }} ",
+          "foreground": "#4AEDD9",
+          "foreground_templates": [
+            "{{ if and (gt .Ahead 0) (gt .Behind 0) }}#FCDB05{{ end }}",
+            "{{ if gt .Ahead 0 }}#4AEDD9{{ end }}",
+            "{{ if gt .Behind 0 }}#BE1414{{ end }}"
+          ],
+          "options": {
+            "branch_icon": "\ue725 ",
+            "fetch_status": true,
+            "fetch_upstream_icon": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "prompt",
+      "alignment": "right",
+      "segments": [
+        {
+          "type": "python",
+          "style": "plain",
+          "template": "\ue235 {{ if .Venv }}<#8B32B8>{{ .Venv }}</> {{ end }}<#7F7F7F>{{ .Full }}</> ",
+          "foreground": "#8B32B8",
+          "options": {
+            "fetch_virtual_env": true,
+            "display_mode": "context",
+            "home_enabled": true
+          }
+        },
+        {
+          "type": "executiontime",
+          "style": "plain",
+          "template": " <#7F7F7F>•</> ⏱ {{ .FormattedMs }} ",
+          "foreground": "#80FF20",
+          "options": {
+            "threshold": 500,
+            "style": "austin"
+          }
+        },
+        {
+          "type": "time",
+          "style": "plain",
+          "template": " <#7F7F7F>•</> 🌙 {{ .CurrentDate | date \"15:04\" }} ",
+          "foreground": "#55FFFF"
+        }
+      ]
+    },
+    {
+      "type": "prompt",
+      "alignment": "left",
+      "newline": true,
+      "segments": [
+        {
+          "type": "status",
+          "style": "plain",
+          "template": "\u276f ",
+          "foreground": "#80FF20",
+          "foreground_templates": [
+            "{{ if gt .Code 0 }}#BE1414{{ end }}"
+          ],
+          "options": {
+            "always_enabled": true
+          }
+        }
+      ]
+    }
+  ]
+}
