@@ -28,6 +28,7 @@ dotfiles/
 ```bash
 git clone https://github.com/JKc66/dotfiles.git ~/dotfiles
 cd ~/dotfiles
+chmod +x /home/ubuntu/dotfiles/install.sh
 ./install.sh
 ```
 
