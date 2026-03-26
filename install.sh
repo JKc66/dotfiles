@@ -22,16 +22,29 @@ err()   { echo -e "  ${RED}✗${NC} $1"; }
 backup_and_link() {
     local src="$1"
     local dest="$2"
+    local use_sudo="${3:-false}"
 
     if [ -L "$dest" ]; then
         # Already a symlink — remove and re-link
-        rm "$dest"
-    elif [ -f "$dest" ]; then
+        if [ "$use_sudo" = true ]; then
+            sudo rm "$dest"
+        else
+            rm "$dest"
+        fi
+    elif [ -f "$dest" ] || [ -d "$dest" ]; then
         warn "Backing up existing $dest → ${dest}.bak"
-        mv "$dest" "${dest}.bak"
+        if [ "$use_sudo" = true ]; then
+            sudo mv "$dest" "${dest}.bak"
+        else
+            mv "$dest" "${dest}.bak"
+        fi
     fi
 
-    ln -s "$src" "$dest"
+    if [ "$use_sudo" = true ]; then
+        sudo ln -s "$src" "$dest"
+    else
+        ln -s "$src" "$dest"
+    fi
     ok "Linked $dest → $src"
 }
 
@@ -53,20 +66,13 @@ echo ""
 
 # ─── MOTD ───────────────────────────────────────────────────
 echo -e "${CYAN}[motd]${NC}"
-if [ -w /etc/update-motd.d ] || [ "$(id -u)" -eq 0 ]; then
+if [ -w /etc/update-motd.d ] || [ "$(id -u)" -eq 0 ] || command -v sudo >/dev/null; then
     for f in "$DOTFILES_DIR"/motd/*; do
         fname=$(basename "$f")
-        sudo cp "$f" "/etc/update-motd.d/$fname"
-        sudo chmod 755 "/etc/update-motd.d/$fname"
-        ok "Copied $fname → /etc/update-motd.d/$fname"
+        backup_and_link "$f" "/etc/update-motd.d/$fname" true
     done
 else
     warn "MOTD scripts require sudo. Re-run with: sudo ./install.sh"
-    info "Or run manually:"
-    for f in "$DOTFILES_DIR"/motd/*; do
-        fname=$(basename "$f")
-        info "  sudo cp $f /etc/update-motd.d/$fname && sudo chmod 755 /etc/update-motd.d/$fname"
-    done
 fi
 echo ""
 
