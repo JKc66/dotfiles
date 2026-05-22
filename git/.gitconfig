@@ -2,8 +2,6 @@
 	name = JKc66
 	email = 137785809+JKc66@users.noreply.github.com
 [credential "https://github.com"]
-	helper = 
-	helper = !/usr/local/bin/gh auth git-credential
+	helper = !/usr/bin/gh auth git-credential
 [credential "https://gist.github.com"]
-	helper = 
-	helper = !/usr/local/bin/gh auth git-credential
+	helper = !/usr/bin/gh auth git-credential

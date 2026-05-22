@@ -132,3 +132,36 @@ eval "$(uv generate-shell-completion zsh)"
 
 # bun completions
 [ -s "/home/ubuntu/.bun/_bun" ] && source "/home/ubuntu/.bun/_bun"
+
+# Added by GitButler installer
+eval "$(but completions zsh)"
+export NVIDIA_API_KEY="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"
+
+# pnpm
+export PNPM_HOME="/home/ubuntu/.local/share/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME/bin:"*) ;;
+  *) export PATH="$PNPM_HOME/bin:$PATH" ;;
+esac
+# pnpm end
+
+# --- PM2 Flush and Restart Helper ---
+pm2fr() {
+  if [[ -z "$1" ]]; then
+    echo "Usage: pm2fr <app-name>"
+    return 1
+  fi
+  pm2 flush "$1" && pm2 restart "$1" --update-env
+}
+
+_pm2fr() {
+  local -a apps
+  apps=($(pm2 jlist 2>/dev/null | grep -o '"name":"[^"]*"' | cut -d'"' -f4 | sort -u))
+  _describe 'pm2 apps' apps
+}
+compdef _pm2fr pm2fr
+
+
+
+# Added by Antigravity CLI installer
+export PATH="/home/ubuntu/.local/bin:$PATH"
