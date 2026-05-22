@@ -1,16 +1,42 @@
 # ------------ Terminal-Icons (deferred for fast startup) ------------ #
-$null = Register-EngineEvent -SourceIdentifier PowerShell.OnIdle -MaxTriggerCount 1 -Action {
-    Import-Module -Name Terminal-Icons
+if (Get-Module -ListAvailable -Name Terminal-Icons) {
+    $null = Register-EngineEvent -SourceIdentifier PowerShell.OnIdle -MaxTriggerCount 1 -Action {
+        Import-Module -Name Terminal-Icons -ErrorAction SilentlyContinue
+    }
 }
+
 # ------------ oh-my-posh ------------ #
-oh-my-posh --init --shell pwsh --config "$env:POSH_THEMES_PATH/minecraft.omp.json" | Invoke-Expression
+if ((-not [Console]::IsOutputRedirected) -and (Get-Command oh-my-posh -ErrorAction SilentlyContinue)) {
+    $theme = Join-Path $env:POSH_THEMES_PATH 'minecraft.omp.json'
+    if (Test-Path -LiteralPath $theme) {
+        oh-my-posh --init --shell pwsh --config $theme | Invoke-Expression
+    }
+}
+
 # ------------ zoxide ------------ #
-Invoke-Expression (& { (zoxide init powershell --cmd cd --hook pwd | Out-String) })
+if (Get-Command zoxide -ErrorAction SilentlyContinue) {
+    Invoke-Expression (& { (zoxide init powershell --cmd cd --hook pwd | Out-String) })
+}
+
 # ------------ PSReadLine ------------ #
-Set-PSReadLineOption -PredictionSource History
-Set-PSReadLineOption -PredictionViewStyle ListView
-Set-PSReadLineOption -HistorySearchCursorMovesToEnd
-Set-PSReadLineOption -AddToHistoryHandler { param($line); return -not $line.StartsWith(' ') } # Prevents space-prefixed commands
-Set-PSReadLineKeyHandler -Key UpArrow -Function HistorySearchBackward
-Set-PSReadLineKeyHandler -Key DownArrow -Function HistorySearchForward
-Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete
+if ($Host.Name -eq 'ConsoleHost' -and (-not [Console]::IsOutputRedirected)) {
+    if (Get-Module -ListAvailable -Name PSReadLine) {
+        Import-Module PSReadLine -ErrorAction SilentlyContinue
+
+        try {
+            Set-PSReadLineOption -PredictionSource History -ErrorAction Stop
+            Set-PSReadLineOption -PredictionViewStyle ListView -ErrorAction Stop
+        } catch {
+            Set-PSReadLineOption -PredictionSource None -ErrorAction SilentlyContinue
+        }
+
+        Set-PSReadLineOption -HistorySearchCursorMovesToEnd -ErrorAction SilentlyContinue
+        Set-PSReadLineOption -AddToHistoryHandler {
+            param($line)
+            return -not $line.StartsWith(' ')
+        } -ErrorAction SilentlyContinue
+        Set-PSReadLineKeyHandler -Key UpArrow -Function HistorySearchBackward -ErrorAction SilentlyContinue
+        Set-PSReadLineKeyHandler -Key DownArrow -Function HistorySearchForward -ErrorAction SilentlyContinue
+        Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete -ErrorAction SilentlyContinue
+    }
+}
